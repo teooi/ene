@@ -4,231 +4,330 @@ import math
 import time
 import json
 from pathlib import Path
+import queue
+
+import numpy as np
+import sounddevice as sd
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtCore import Qt, QTimer, QPoint, QThread, Signal
-from PySide6.QtGui import QGuiApplication, QSurfaceFormat
+from PySide6.QtCore import Qt, QTimer, QThread, Signal, QCoreApplication
+from PySide6.QtGui import QSurfaceFormat
 
 from OpenGL.GL import *
 import live2d.v3 as live2d
 
-# Audio handling
-import sounddevice as sd
-import numpy as np
+from kokoro import KPipeline
 
 # ---------------- Configuration ----------------
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 400
 FPS = 60
-AUDIO_DEVICE_NAME = None 
 
-# Lip Sync Settings
-LIP_SYNC_SENSITIVITY = 2.0
-LIP_SYNC_SMOOTHING = 0.3
-LIP_SYNC_THRESHOLD = 0.05
+# Lip Sync (tuned for Kokoro)
+LIP_SYNC_SENSITIVITY = 1.0  # multiply the normalized volume before smoothing
+LIP_SYNC_SMOOTHING = 0.35
+LIP_SYNC_THRESHOLD = 0.005
 
-# ---------------- Helper: Fix Model JSON ----------------
-def get_fixed_model_path(original_path):
-    """Removes forced Default Expression."""
-    try:
-        fixed_path = original_path.parent / f"{original_path.stem}_fixed{original_path.suffix}"
-        
-        if fixed_path.exists():
-            os.remove(fixed_path)
+# TTS
+TTS_VOICE = "af_aoede"
+SAMPLE_RATE = 22050
+FRAME_SIZE = 441
 
-        with open(original_path, 'r') as f:
-            data = json.load(f)
-        
-        changed = False
+# Adaptive audio tuning (change these to taste)
+AUDIO_NOISE_FLOOR = 1e-4    # below this RMS we treat as silence
+AUDIO_VOLUME_GAIN = 6.0     # how aggressively RMS maps to mouth movement
+AUDIO_COMPRESSION = 0.8     # <1 compresses peaks (reduces clipping)
 
-        if 'DefaultExpression' in data:
-            del data['DefaultExpression'] 
-            changed = True
-        
-        if 'FileReferences' in data and 'DefaultExpression' in data['FileReferences']:
-            del data['FileReferences']['DefaultExpression']
-            changed = True
+# ---------------- Helper ----------------
 
-        if changed:
-            with open(fixed_path, 'w') as f:
-                json.dump(data, f, indent=4)
-            print(f"[Model Fix] Removed forced default expression -> {fixed_path.name}")
-            return fixed_path
-        else:
-            return original_path
+def get_fixed_model_path(original_path: Path):
+    fixed_path = original_path.with_stem(original_path.stem + "_fixed")
+    if fixed_path.exists():
+        return fixed_path
 
-    except Exception as e:
-        print(f"[Model Fix] Error reading JSON: {e}")
-        return original_path
+    with open(original_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-# ---------------- Audio Worker Thread ----------------
+    data.pop("DefaultExpression", None)
+    if "FileReferences" in data:
+        data["FileReferences"].pop("DefaultExpression", None)
+
+    with open(fixed_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+
+    return fixed_path
+
+# ---------------- Audio Worker ----------------
 class AudioWorker(QThread):
+    # emits *raw* RMS (not yet scaled to mouth) so UI code can adapt
     volume_update = Signal(float)
 
-    def __init__(self, device_name=None):
+    def __init__(self):
         super().__init__()
         self.running = True
-        self.device_name = device_name
-        self.stream = None
+        self.audio_queue = queue.Queue()
+
+    def add_audio(self, audio: np.ndarray):
+        # ensure float32 numpy array
+        if audio.dtype != np.float32:
+            audio = audio.astype(np.float32)
+        self.audio_queue.put(audio)
 
     def run(self):
-        device_id = None
-        if self.device_name:
-            devices = sd.query_devices()
-            for i, d in enumerate(devices):
-                if self.device_name.lower() in d['name'].lower():
-                    if d['max_input_channels'] > 0:
-                        device_id = i
-                        break
-        if device_id is None:
-            device_id = sd.default.device[0]
-
-        print(f"[Audio] Listening to: {sd.query_devices(device_id)['name']}")
-
         try:
-            self.stream = sd.InputStream(
-                device=device_id, channels=1, samplerate=44100, dtype='float32', blocksize=1024
-            )
-            self.stream.start()
-            while self.running:
-                data, overflowed = self.stream.read(1024)
-                rms = np.sqrt(np.mean(data**2))
-                volume = min(rms * 50.0, 1.0) 
-                self.volume_update.emit(volume)
+            with sd.OutputStream(
+                samplerate=SAMPLE_RATE,
+                channels=1,
+                dtype="float32",
+                blocksize=FRAME_SIZE
+            ) as stream:
+
+                while self.running:
+                    try:
+                        audio = self.audio_queue.get(timeout=0.05)
+
+                        # write in blocks and compute RMS per-block
+                        for i in range(0, len(audio), FRAME_SIZE):
+                            if not self.running:
+                                break
+
+                            frame = audio[i:i + FRAME_SIZE]
+                            if len(frame) == 0:
+                                continue
+
+                            # remove any DC offset before RMS
+                            frame = frame - np.mean(frame)
+
+                            stream.write(frame.reshape(-1, 1))
+
+                            # RMS (raw, unscaled)
+                            rms = float(np.sqrt(np.mean(frame ** 2)))
+
+                            # emit raw RMS
+                            self.volume_update.emit(rms)
+
+                    except queue.Empty:
+                        # emit 0 so UI can decay/mute
+                        self.volume_update.emit(0.0)
+
         except Exception as e:
-            print(f"[Audio] Error: {e}")
-        finally:
-            if self.stream:
-                self.stream.stop()
-                self.stream.close()
+            # print a single error message so user knows something went wrong
+            print(f"[AudioWorker] Error: {e}")
 
     def stop(self):
         self.running = False
         self.wait()
 
+# ---------------- TTS Generator ----------------
+class TTSGenerator(QThread):
+    audio_chunk = Signal(np.ndarray)
+    finished_tts = Signal()
+
+    def __init__(self, pipeline: KPipeline, text: str):
+        super().__init__()
+        self.pipeline = pipeline
+        self.text = text
+
+    def run(self):
+        try:
+            for r in self.pipeline(self.text, voice=TTS_VOICE):
+                audio = (
+                    r.output.audio
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .astype(np.float32)
+                )
+
+                # Remove DC offset and safety-clip to [-1, 1]
+                audio = audio - np.mean(audio)
+                np.clip(audio, -1.0, 1.0, out=audio)
+
+                self.audio_chunk.emit(audio)
+
+        except Exception as e:
+            print(f"[TTS] Error: {e}")
+
+        self.finished_tts.emit()
+
+# ---------------- CLI Input ----------------
+class InputThread(QThread):
+    text_received = Signal(str)
+
+    def run(self):
+        # friendly minimal console UI
+        print("\nKokoro — type text and press Enter. Commands: /help /quit\n")
+
+        while True:
+            try:
+                text = input()
+
+                if not text:
+                    continue
+
+                cmd = text.strip()
+                if cmd == "/help":
+                    print("Commands:\n  /help - show this message\n  /quit - quit application")
+                    continue
+
+                if cmd in ("/quit", "/exit"):
+                    # politely ask Qt app to quit
+                    QCoreApplication.quit()
+                    break
+
+                # emit normal text
+                self.text_received.emit(text)
+
+            except EOFError:
+                break
+
 # ---------------- Live2D Widget ----------------
 class Live2DWidget(QOpenGLWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        
+    def __init__(self):
+        super().__init__()
+
         self.model = None
-        self.model_path = None # Store path for reloading
         self.start_time = time.time()
+
+        self._tts_start_time = None
+
+        # mouth values
+        self.mouth_raw = 0.0
+        self.mouth_value = 0.0
+
+        # adaptive peak for safety (prevents mouth from getting "stuck open")
+        self._peak = 1e-6
+
+        self.audio_worker = AudioWorker()
+        self.audio_worker.volume_update.connect(self.on_volume)
+
+        self.pipeline = None
+        self.tts_queue = queue.Queue()
+        self.tts_busy = False
+
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
         self.drag_position = None
-        
-        self.mouth_raw_volume = 0.0
-        self.mouth_open_value = 0.0 
-        
-        self.expressions = []
         self.setMouseTracking(True)
 
-        self.audio_thread = AudioWorker(AUDIO_DEVICE_NAME)
-        self.audio_thread.volume_update.connect(self.on_audio_volume_received)
-
-        # OpenGL Setup
         fmt = QSurfaceFormat()
-        fmt.setRenderableType(QSurfaceFormat.OpenGL)
         fmt.setVersion(2, 1)
-        fmt.setProfile(QSurfaceFormat.NoProfile)
         fmt.setAlphaBufferSize(8)
         self.setFormat(fmt)
 
-        # Window Setup
-        flags = Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Window | Qt.BypassWindowManagerHint
-        self.setWindowFlags(flags)
-        self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_NoSystemBackground)
-        self.setAttribute(Qt.WA_OpaquePaintEvent, False)
-        self.setAutoFillBackground(False)
-        self.setUpdateBehavior(QOpenGLWidget.NoPartialUpdate)
-
-        # Loop
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update)
         self.timer.start(1000 // FPS)
 
-        if sys.platform == "darwin":
-            QGuiApplication.instance().applicationStateChanged.connect(self._on_app_state_changed)
+    def set_pipeline(self, pipeline):
+        self.pipeline = pipeline
 
-    def load_model(self):
-        """Loads or Reloads the model."""
-        if not self.model_path: return
+    def enqueue_tts(self, text):
+        self.tts_queue.put(text)
+        self.process_queue()
 
-        # Make OpenGL context current
-        self.makeCurrent()
-        
-        # Clear old model
-        self.model = None
-        
-        # Create and Load new
-        self.model = live2d.LAppModel()
-        self.model.LoadModelJson(str(self.model_path))
-        self.model.Resize(self.width(), self.height())
+    def process_queue(self):
+        if self.tts_busy or self.tts_queue.empty():
+            return
 
-    def reset_to_default(self):
-        """Hard resets the model to its original state."""
-        print("[System] Reloading model to reset to default state...")
-        self.load_model()
-        self.update()
+        self.tts_busy = True
+        text = self.tts_queue.get()
+
+        self.current_tts = TTSGenerator(self.pipeline, text)
+        self.current_tts.audio_chunk.connect(self.audio_worker.add_audio)
+        self.current_tts.finished_tts.connect(self.on_tts_done)
+
+        self._tts_start_time = time.time()
+        self.current_tts.start()
+
+    def on_tts_done(self):
+        if self._tts_start_time is not None:
+            elapsed = time.time() - self._tts_start_time
+
+            print(f"\ninference: {elapsed:.2f}s\n")
+
+        self._tts_start_time = None
+        self.tts_busy = False
+        self.process_queue()
 
     def initializeGL(self):
         live2d.glInit()
         glClearColor(0, 0, 0, 0)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
-        original_model_path = Path("pichu/Pichu.model3.json")
-        if not original_model_path.exists():
-            print(f"Error: Model not found at {original_model_path}")
+
+        path = get_fixed_model_path(Path("tororo_vts/tororo.model3.json"))
+
+        self.model = live2d.LAppModel()
+        self.model.LoadModelJson(str(path))
+        self.model.Resize(self.width(), self.height())
+
+        self.audio_worker.start()
+
+    def on_volume(self, v_raw):
+        # v_raw is the RMS computed per-frame in AudioWorker
+
+        # floor small noise
+        v = max(0.0, v_raw - AUDIO_NOISE_FLOOR)
+
+        # simple compressor / gain
+        v = v * AUDIO_VOLUME_GAIN
+        v = v ** AUDIO_COMPRESSION
+
+        # track a slowly-decaying peak to avoid permanent over-scaling
+        self._peak = max(self._peak * 0.995, max(v, 1e-6))
+
+        # normalize by peak so loud clips don't permanently dominate
+        v = v / (self._peak + 1e-6)
+
+        # final sensitivity multiplier
+        v = min(max(v * LIP_SYNC_SENSITIVITY, 0.0), 1.0)
+
+        # apply slight hold so very short drops don't fully close mouth
+        self.mouth_raw = max(self.mouth_raw * 0.85, v)
+
+    def paintGL(self):
+        live2d.clearBuffer()
+        if not self.model:
             return
 
-        # Store the fixed path for reloading later
-        self.model_path = get_fixed_model_path(original_model_path)
-        
-        # Load initially
-        self.load_model()
-        
-        # Load Expressions
-        exp_ids = self.model.GetExpressionIds()
-        if exp_ids:
-            if isinstance(exp_ids, dict):
-                self.expressions = list(exp_ids.keys())
-            else:
-                self.expressions = list(exp_ids)
-        
-        print(f"[System] Loaded Pichu. Available Expressions:")
-        for i, name in enumerate(self.expressions):
-            print(f"  [{i+1}] {name}")
-        print(f"  [0] Default/Neutral (Hard Reset)")
-            
-        self.audio_thread.start()
+        t = time.time() - self.start_time
+        self.model.SetParameterValue("PARAM_BREATH", (math.sin(t * 2) + 1) / 2)
 
-    def keyPressEvent(self, event):
-        key = event.key()
-        
-        # 0: Hard Reset
-        if key == Qt.Key_0:
-            self.reset_to_default()
-            
-        # 1-9: Emotions
-        elif Qt.Key_1 <= key <= Qt.Key_9:
-            index = key - Qt.Key_1
-            if index < len(self.expressions):
-                exp_name = self.expressions[index]
-                self.model.SetExpression(exp_name)
-                print(f"[System] Set expression: {exp_name}")
+        if self.mouth_raw > LIP_SYNC_THRESHOLD:
+            target = min(self.mouth_raw, 1.0)
+        else:
+            target = 0.0
 
-    # --- Mouse Events ---
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton and self.drag_position is not None:
-            self.move(event.globalPosition().toPoint() - self.drag_position)
-            event.accept()
+        self.mouth_value += (target - self.mouth_value) * LIP_SYNC_SMOOTHING
+
+        for p in ("PARAM_MOUTH_OPEN_Y", "ParamMouthOpenY"):
+            self.model.SetParameterValue(p, self.mouth_value)
+
+        self.model.Update()
+        self.model.Draw()
+
+    def closeEvent(self, event):
+        self.audio_worker.stop()
+        event.accept()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self.drag_position = (
+                event.globalPosition().toPoint()
+                - self.frameGeometry().topLeft()
+            )
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton and self.drag_position is not None:
+            self.move(
+                event.globalPosition().toPoint()
+                - self.drag_position
+            )
             event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -236,75 +335,26 @@ class Live2DWidget(QOpenGLWidget):
             self.drag_position = None
             event.accept()
 
-    def on_audio_volume_received(self, volume):
-        self.mouth_raw_volume = volume
-
-    def paintGL(self):
-        live2d.clearBuffer()
-        if not self.model: return
-
-        t = time.time() - self.start_time
-
-        # --- ANIMATION ---
-        self.model.SetParameterValue("PARAM_BREATH", (math.sin(t * 2) + 1) / 2)
-
-        # Mouth Sync
-        target = 0.0
-        if self.mouth_raw_volume >= LIP_SYNC_THRESHOLD:
-            target = (self.mouth_raw_volume * LIP_SYNC_SENSITIVITY)
-            if target > 1.0: target = 1.0
-
-        self.mouth_open_value += (target - self.mouth_open_value) * LIP_SYNC_SMOOTHING
-        param_value = self.mouth_open_value
-        
-        self.model.SetParameterValue("PARAM_MOUTH_OPEN_Y", param_value)
-        self.model.SetParameterValue("PARAM_MOUTH_OPEN_X", param_value * 0.5)
-        self.model.SetParameterValue("ParamMouthOpenY", param_value)
-        self.model.SetParameterValue("Mouth Open", param_value)
-
-        self.model.Update()
-        self.model.Draw()
-
-    def resizeGL(self, w, h):
-        if self.model: self.model.Resize(w, h)
-
-    def _on_app_state_changed(self, state):
-        if state != Qt.ApplicationActive or not self.isValid(): return
-        self.makeCurrent()
-        glFinish()
-        w, h = self.width(), self.height()
-        super().resizeGL(w + 1, h + 1)
-        super().resizeGL(w, h)
-        for _ in range(2):
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            live2d.clearBuffer()
-            self.update()
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        QTimer.singleShot(0, self.update)
-
-    def closeEvent(self, event):
-        self.audio_thread.stop()
-        super().closeEvent(event)
 
 # ---------------- Main ----------------
 def main():
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    app = QApplication(sys.argv)
-    
-    fmt = QSurfaceFormat()
-    fmt.setAlphaBufferSize(8)
-    QSurfaceFormat.setDefaultFormat(fmt)
+    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-    try:
-        live2d.init()
-    except Exception as e:
-        print(f"Failed to initialize Live2D: {e}")
-        sys.exit(1)
+    app = QApplication(sys.argv)
+
+    print("[Kokoro] Ready — enter text to speak (type /help in console for commands)")
+    pipeline = KPipeline(lang_code="a", device="cpu")
+
+    live2d.init()
 
     widget = Live2DWidget()
+    widget.set_pipeline(pipeline)
     widget.show()
+
+    input_thread = InputThread()
+    input_thread.text_received.connect(widget.enqueue_tts)
+    input_thread.start()
 
     try:
         sys.exit(app.exec())
