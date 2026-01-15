@@ -8,7 +8,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtCore import Qt, QTimer, QPoint, QThread, Signal
-from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QCursor
+from PySide6.QtGui import QGuiApplication, QSurfaceFormat
 
 from OpenGL.GL import *
 import live2d.v3 as live2d
@@ -23,32 +23,41 @@ WINDOW_HEIGHT = 400
 FPS = 60
 AUDIO_DEVICE_NAME = None 
 
-# Debug Settings
+# Lip Sync Settings
 LIP_SYNC_SENSITIVITY = 2.0
 LIP_SYNC_SMOOTHING = 0.3
-# Lowered threshold to pick up everything for debugging
-LIP_SYNC_THRESHOLD = 0.01 
+LIP_SYNC_THRESHOLD = 0.05
 
 # ---------------- Helper: Fix Model JSON ----------------
 def get_fixed_model_path(original_path):
+    """Removes forced Default Expression."""
     try:
+        fixed_path = original_path.parent / f"{original_path.stem}_fixed{original_path.suffix}"
+        
+        if fixed_path.exists():
+            os.remove(fixed_path)
+
         with open(original_path, 'r') as f:
             data = json.load(f)
+        
         changed = False
-        if 'DefaultExpression' in data and data['DefaultExpression']:
-            data['DefaultExpression'] = "" 
+
+        if 'DefaultExpression' in data:
+            del data['DefaultExpression'] 
             changed = True
-        elif 'FileReferences' in data and 'DefaultExpression' in data['FileReferences']:
-             data['FileReferences']['DefaultExpression'] = ""
-             changed = True
+        
+        if 'FileReferences' in data and 'DefaultExpression' in data['FileReferences']:
+            del data['FileReferences']['DefaultExpression']
+            changed = True
+
         if changed:
-            fixed_path = original_path.parent / f"{original_path.stem}_fixed{original_path.suffix}"
             with open(fixed_path, 'w') as f:
                 json.dump(data, f, indent=4)
-            print(f"[Model Fix] Created fixed config: {fixed_path}")
+            print(f"[Model Fix] Removed forced default expression -> {fixed_path.name}")
             return fixed_path
         else:
             return original_path
+
     except Exception as e:
         print(f"[Model Fix] Error reading JSON: {e}")
         return original_path
@@ -82,18 +91,10 @@ class AudioWorker(QThread):
                 device=device_id, channels=1, samplerate=44100, dtype='float32', blocksize=1024
             )
             self.stream.start()
-            frame_count = 0
             while self.running:
                 data, overflowed = self.stream.read(1024)
                 rms = np.sqrt(np.mean(data**2))
                 volume = min(rms * 50.0, 1.0) 
-                
-                # --- DEBUG PRINT: Log Volume ---
-                # Print volume every 30 frames (approx 2-3 times per second) to avoid spamming
-                frame_count += 1
-                if frame_count % 30 == 0:
-                    print(f"[Audio] Raw Volume: {volume:.4f} (Threshold: {LIP_SYNC_THRESHOLD})")
-
                 self.volume_update.emit(volume)
         except Exception as e:
             print(f"[Audio] Error: {e}")
@@ -112,15 +113,12 @@ class Live2DWidget(QOpenGLWidget):
         super().__init__(parent)
         
         self.model = None
+        self.model_path = None # Store path for reloading
         self.start_time = time.time()
         self.drag_position = None
         
-        # Mouth State
         self.mouth_raw_volume = 0.0
         self.mouth_open_value = 0.0 
-        
-        # Manual Test Mode (Force mouth open)
-        self.manual_mouth_open = False
         
         self.expressions = []
         self.setMouseTracking(True)
@@ -154,6 +152,27 @@ class Live2DWidget(QOpenGLWidget):
         if sys.platform == "darwin":
             QGuiApplication.instance().applicationStateChanged.connect(self._on_app_state_changed)
 
+    def load_model(self):
+        """Loads or Reloads the model."""
+        if not self.model_path: return
+
+        # Make OpenGL context current
+        self.makeCurrent()
+        
+        # Clear old model
+        self.model = None
+        
+        # Create and Load new
+        self.model = live2d.LAppModel()
+        self.model.LoadModelJson(str(self.model_path))
+        self.model.Resize(self.width(), self.height())
+
+    def reset_to_default(self):
+        """Hard resets the model to its original state."""
+        print("[System] Reloading model to reset to default state...")
+        self.load_model()
+        self.update()
+
     def initializeGL(self):
         live2d.glInit()
         glClearColor(0, 0, 0, 0)
@@ -165,11 +184,13 @@ class Live2DWidget(QOpenGLWidget):
             print(f"Error: Model not found at {original_model_path}")
             return
 
-        model_to_load = get_fixed_model_path(original_model_path)
-        self.model = live2d.LAppModel()
-        self.model.LoadModelJson(str(model_to_load))
-        self.model.Resize(self.width(), self.height())
+        # Store the fixed path for reloading later
+        self.model_path = get_fixed_model_path(original_model_path)
         
+        # Load initially
+        self.load_model()
+        
+        # Load Expressions
         exp_ids = self.model.GetExpressionIds()
         if exp_ids:
             if isinstance(exp_ids, dict):
@@ -180,34 +201,24 @@ class Live2DWidget(QOpenGLWidget):
         print(f"[System] Loaded Pichu. Available Expressions:")
         for i, name in enumerate(self.expressions):
             print(f"  [{i+1}] {name}")
-        print(f"  [0] Default/Neutral")
-        print(f"[System] MANUAL TEST: Hold [SPACEBAR] to force mouth open.")
+        print(f"  [0] Default/Neutral (Hard Reset)")
             
         self.audio_thread.start()
 
     def keyPressEvent(self, event):
         key = event.key()
         
-        # TEST MODE: Force mouth open
-        if key == Qt.Key_Space:
-            self.manual_mouth_open = True
-            print("[Test] Manual Mouth Open: ON")
-
-        # Expressions
+        # 0: Hard Reset
         if key == Qt.Key_0:
-            self.model.SetExpression("") 
-            print("[System] Reset to Default Expression")
+            self.reset_to_default()
+            
+        # 1-9: Emotions
         elif Qt.Key_1 <= key <= Qt.Key_9:
             index = key - Qt.Key_1
             if index < len(self.expressions):
                 exp_name = self.expressions[index]
                 self.model.SetExpression(exp_name)
                 print(f"[System] Set expression: {exp_name}")
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Space:
-            self.manual_mouth_open = False
-            print("[Test] Manual Mouth Open: OFF")
 
     # --- Mouse Events ---
     def mouseMoveEvent(self, event):
@@ -234,48 +245,18 @@ class Live2DWidget(QOpenGLWidget):
 
         t = time.time() - self.start_time
 
-        # --- GLOBAL MOUSE TRACKING ---
-        global_pos = QCursor.pos()
-        local_pos = self.mapFromGlobal(global_pos)
-        center_x, center_y = self.width() / 2, self.height() / 2
-        mouse_x = (local_pos.x() - center_x) / center_x
-        mouse_y = (local_pos.y() - center_y) / center_y
-
         # --- ANIMATION ---
-        
-        # 1. Breathing
         self.model.SetParameterValue("PARAM_BREATH", (math.sin(t * 2) + 1) / 2)
 
-        # 2. Eye Tracking
-        self.model.SetParameterValue("PARAM_ANGLE_X", mouse_x * 30.0)
-        self.model.SetParameterValue("PARAM_ANGLE_Y", mouse_y * 30.0)
-        self.model.SetParameterValue("PARAM_EYE_BALL_X", mouse_x)
-        self.model.SetParameterValue("PARAM_EYE_BALL_Y", mouse_y)
-
-        # 3. Mouth Sync Logic
+        # Mouth Sync
         target = 0.0
-        
-        # PRIORITY 1: Manual Test (Spacebar)
-        if self.manual_mouth_open:
-            target = 1.0
-        
-        # PRIORITY 2: Audio
-        elif self.mouth_raw_volume >= LIP_SYNC_THRESHOLD:
+        if self.mouth_raw_volume >= LIP_SYNC_THRESHOLD:
             target = (self.mouth_raw_volume * LIP_SYNC_SENSITIVITY)
             if target > 1.0: target = 1.0
-        else:
-            target = 0.0
 
-        # Smoothing
         self.mouth_open_value += (target - self.mouth_open_value) * LIP_SYNC_SMOOTHING
-
-        # Send to Model
         param_value = self.mouth_open_value
         
-        # Log final value only if it's moving significantly
-        if param_value > 0.01:
-            print(f"[Mouth] Sent to Model: {param_value:.2f}")
-
         self.model.SetParameterValue("PARAM_MOUTH_OPEN_Y", param_value)
         self.model.SetParameterValue("PARAM_MOUTH_OPEN_X", param_value * 0.5)
         self.model.SetParameterValue("ParamMouthOpenY", param_value)
