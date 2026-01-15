@@ -1,3 +1,4 @@
-venv 
+venv/ 
 
-akari_vts
+akari_vts/
+kokoro/
