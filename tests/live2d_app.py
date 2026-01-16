@@ -49,7 +49,7 @@ AUDIO_COMPRESSION = 0.8
 
 # Model paths
 MODEL_PATH = "models/Meta-Llama-3-8B-Instruct.Q4_1.gguf"
-LIVE2D_MODEL_PATH = "live2d/l2d/L2DZeroVS.model3.json"
+LIVE2D_MODEL_PATH = "live2d_models/l2d/L2DZeroVS.model3.json"
 
 # Debug mode
 DEBUG = True
