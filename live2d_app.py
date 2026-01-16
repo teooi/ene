@@ -19,13 +19,14 @@ import live2d.v3 as live2d
 
 from kokoro import KPipeline
 
+from llama_cpp import Llama
+
 # ---------------- Configuration ----------------
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 400
 FPS = 60
 
-# Lip Sync (tuned for Kokoro)
-LIP_SYNC_SENSITIVITY = 1.0  # multiply the normalized volume before smoothing
+LIP_SYNC_SENSITIVITY = 0.4 
 LIP_SYNC_SMOOTHING = 0.35
 LIP_SYNC_THRESHOLD = 0.005
 
@@ -38,6 +39,97 @@ FRAME_SIZE = 441
 AUDIO_NOISE_FLOOR = 1e-4    # below this RMS we treat as silence
 AUDIO_VOLUME_GAIN = 6.0     # how aggressively RMS maps to mouth movement
 AUDIO_COMPRESSION = 0.8     # <1 compresses peaks (reduces clipping)
+
+MODEL_PATH = "models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+
+llm = Llama(
+    model_path=MODEL_PATH,
+    n_ctx=32768,
+    n_gpu_layers=-1,
+    n_threads=8,
+    verbose=False,
+)
+
+SYSTEM_PROMPT = Path("system_prompt.txt").read_text(
+    encoding="utf-8"
+).strip()
+
+
+def llm_stream(user_msg: str):
+    prompt = f"""<|im_start|>system
+{SYSTEM_PROMPT}
+Your creator is teo.
+<|im_end|>
+<|im_start|>user
+{user_msg}
+<|im_end|>
+<|im_start|>assistant
+"""
+
+    start = time.perf_counter()
+    first_token = None
+    token_count = 0
+
+    spoken_chunks = []
+
+    for chunk in llm(
+        prompt,
+        max_tokens=256,
+        temperature=0.5,
+        top_p=0.9,
+        stop=["<|im_end|>"],
+        stream=True,
+    ):
+        text = chunk["choices"][0]["text"]
+        if not text:
+            continue
+
+        if first_token is None:
+            first_token = time.perf_counter()
+
+        token_count += 1
+        spoken_chunks.append(text)
+
+        yield text  
+
+    end = time.perf_counter()
+
+    if first_token:
+        ttft = first_token - start
+        tps = token_count / (end - first_token)
+        print(
+            f"\n⏱ TTFT: {ttft:.3f}s | 🧮 Tokens: {token_count} | ⚡ {tps:.1f} tok/s | ⌛ Total: {end - start:.2f}s\n"
+        )
+
+    llm_stream.last_spoken_text = "".join(spoken_chunks)
+
+class LLMWorker(QThread):
+    text_chunk = Signal(str)
+    finished = Signal()
+
+    def __init__(self, user_text: str):
+        super().__init__()
+        self.user_text = user_text
+        self._running = True
+
+    def stop(self):
+        self._running = False
+
+    def run(self):
+        buffer = ""
+        for token in llm_stream(self.user_text):
+            if not self._running:
+                break
+
+            buffer += token
+            if any(p in buffer for p in ".!?"):
+                self.text_chunk.emit(buffer.strip())
+                buffer = ""
+
+        if buffer.strip():
+            self.text_chunk.emit(buffer.strip())
+
+        self.finished.emit()
 
 # ---------------- Helper ----------------
 
@@ -155,30 +247,26 @@ class TTSGenerator(QThread):
 class InputThread(QThread):
     text_received = Signal(str)
 
-    def run(self):
-        # friendly minimal console UI
-        print("\nKokoro — type text and press Enter. Commands: /help /quit\n")
+    def __init__(self):
+        super().__init__()
+        self.running = True
 
-        while True:
+    def stop(self):
+        self.running = False
+
+    def run(self):
+        print("\nKokoro — type text and press Enter. Commands: /help /quit\n")
+        while self.running:
             try:
                 text = input()
-
                 if not text:
                     continue
 
-                cmd = text.strip()
-                if cmd == "/help":
-                    print("Commands:\n  /help - show this message\n  /quit - quit application")
-                    continue
-
-                if cmd in ("/quit", "/exit"):
-                    # politely ask Qt app to quit
+                if text.strip() in ("/quit", "/exit"):
                     QCoreApplication.quit()
                     break
 
-                # emit normal text
                 self.text_received.emit(text)
-
             except EOFError:
                 break
 
@@ -226,8 +314,14 @@ class Live2DWidget(QOpenGLWidget):
         self.pipeline = pipeline
 
     def enqueue_tts(self, text):
-        self.tts_queue.put(text)
-        self.process_queue()
+        if hasattr(self, "llm_worker") and self.llm_worker.isRunning():
+            self.llm_worker.stop()
+            self.llm_worker.wait()
+
+        self.llm_worker = LLMWorker(text)
+        self.llm_worker.text_chunk.connect(self.tts_queue.put)
+        self.llm_worker.finished.connect(self.process_queue)
+        self.llm_worker.start()
 
     def process_queue(self):
         if self.tts_busy or self.tts_queue.empty():
@@ -311,6 +405,14 @@ class Live2DWidget(QOpenGLWidget):
         self.model.Draw()
 
     def closeEvent(self, event):
+        if hasattr(self, "llm_worker") and self.llm_worker.isRunning():
+            self.llm_worker.stop()
+            self.llm_worker.wait()
+
+        if hasattr(self, "current_tts") and self.current_tts.isRunning():
+            self.current_tts.quit()
+            self.current_tts.wait()
+
         self.audio_worker.stop()
         event.accept()
 
@@ -359,6 +461,8 @@ def main():
     try:
         sys.exit(app.exec())
     finally:
+        input_thread.stop()
+        input_thread.wait()
         live2d.dispose()
 
 if __name__ == "__main__":
