@@ -15,7 +15,7 @@ AUDIO_NOISE_FLOOR = 1e-4
 AUDIO_VOLUME_GAIN = 6.0
 AUDIO_COMPRESSION = 0.8
 
-MODEL_PATH = "models/Meta-Llama-3-8B-Instruct.Q4_1.gguf"
-LIVE2D_MODEL_PATH = "live2d_models/l2d/L2DZeroVS.model3.json"
+MODEL_PATH = "models/DeepSeek-R1-Distill-Llama-8B-Q4_1.gguf"
+LIVE2D_MODEL_PATH = "live2d_models/pichu/Pichu.model3.json"
 
 DEBUG = True

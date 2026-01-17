@@ -20,7 +20,7 @@ def main():
     llm = init_llm()
     system_prompt = load_system_prompt()
 
-    pipeline = KPipeline(lang_code="a", device="cpu")
+    pipeline = KPipeline(lang_code="a", device="mps")
 
     widget = Live2DWidget(llm, system_prompt)
     widget.set_pipeline(pipeline)
