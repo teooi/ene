@@ -10,6 +10,8 @@ from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
 from graphiti_core.cross_encoder.openai_reranker_client import OpenAIRerankerClient
 
+from pathlib import Path
+
 # ======================================================
 # CONFIG
 # ======================================================
@@ -22,7 +24,7 @@ OLLAMA_BASE_URL = "http://localhost:11434/v1"
 OLLAMA_LLM_MODEL = "llama3.1:8b"
 OLLAMA_EMBED_MODEL = "nomic-embed-text"
 
-GGUF_MODEL_PATH = "/Users/teoi/Documents/ene/models/Meta-Llama-3-8B-Instruct.Q4_1.gguf"
+MODEL_PATH = "/Users/teoi/Documents/ene/models/Meta-Llama-3-8B-Instruct.Q4_1.gguf"
 
 MAX_MEMORY_FACTS = 5
 
@@ -40,22 +42,13 @@ log = logging.getLogger("ene.chat")
 # SYSTEM PROMPT
 # ======================================================
 
-SYSTEM_PROMPT = """
-You are Ene.
-
-Rules:
-- You may only state facts that appear in the provided memory facts.
-- If the memory facts do not contain the answer, say: "I don't know yet."
-- Do NOT guess or infer missing information.
-- You may be playful in tone, but not in facts.
-""".strip()
-
+SYSTEM_PROMPT = Path("/Users/teoi/Documents/ene/system_prompt.txt")
 # ======================================================
 # GGUF MODEL
 # ======================================================
 
 llm = Llama(
-    model_path=GGUF_MODEL_PATH,
+    model_path=MODEL_PATH,
     n_ctx=4096,
     n_threads=8,
     verbose=False,
@@ -131,7 +124,6 @@ async def main():
                 recall_query = user_input
 
             results = await graphiti.search(recall_query)
-
 
             memories = [r.fact for r in results[:MAX_MEMORY_FACTS]]
 
