@@ -1,689 +1,392 @@
-{
-  "entity": "Teo",
-  "episodes": [
-    {
-      "episode_id": "ep_0001",
-      "type": "PersonalityCore",
-      "title": "Chaotic-friendly conversational style with high humor density",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo consistently communicates using rapid, informal, meme-heavy language. Messages often include slang, exaggerated expressions, emojis, ironic capitalization, and playful insults. Tone suggests comfort with chaos, informality, and social intimacy. Humor is often self-deprecating, absurdist, or timing-based. Teo prefers lightness even when stressed.",
-      "traits_inferred": [
-        "Highly expressive",
-        "Humor as social glue",
-        "Low formality preference",
-        "Comfortable with emotional openness via jokes",
-        "Internet-native communication style"
-      ],
-      "confidence": 0.97
-    },
-    {
-      "episode_id": "ep_0002",
-      "type": "SocialBehavior",
-      "title": "Strong maintenance of social bonds through constant check-ins",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently initiates or sustains conversations via short check-ins ('yoyoyo', 'herro', 'ello', etc.). This suggests a desire to maintain presence without demanding heavy engagement. Indicates social warmth and attentiveness without emotional pressure.",
-      "traits_inferred": [
-        "Socially proactive",
-        "Low-pressure communicator",
-        "Values continuity over depth bursts",
-        "Avoids social cold starts"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0003",
-      "type": "TimeManagement",
-      "title": "Chronic lateness paired with transparency and apology humor",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo is frequently late, delayed, or rescheduling. However, this is almost always communicated immediately, paired with humor, emojis, or exaggerated guilt. Indicates low time rigidity but high social accountability.",
-      "traits_inferred": [
-        "Time optimistic",
-        "Avoidant of silence when late",
-        "Values reassurance",
-        "Conflict-softening through humor"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0004",
-      "type": "EmotionalRegulation",
-      "title": "Uses humor to manage stress, sickness, and academic pressure",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently reports stress (schoolwork, deadlines, sickness, travel issues) but frames it humorously rather than catastrophically. Emotional distress is acknowledged but rarely dramatized.",
-      "traits_inferred": [
-        "Resilient coping style",
-        "Emotionally self-aware",
-        "Low catastrophizing",
-        "Humor as regulation tool"
-      ],
-      "confidence": 0.96
-    },
-    {
-      "episode_id": "ep_0005",
-      "type": "Lifestyle",
-      "title": "Nocturnal tendencies and late-night productivity oscillation",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently messages late at night, cooks late, studies late, games late, or delays sleep. Expresses both acceptance and frustration with this pattern. Indicates night-owl circadian preference.",
-      "traits_inferred": [
-        "Night-oriented energy",
-        "Flexible sleep schedule",
-        "Productivity bursts",
-        "Low morning affinity"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0006",
-      "type": "Interests",
-      "title": "Strong affinity for anime, especially Attack on Titan",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-01-01"
-      },
-      "summary": "Repeated references to AOT (anime and manga), openings, shared watching sessions, emotional engagement, and scheduling around episodes. Indicates strong fandom identity and shared-media bonding.",
-      "traits_inferred": [
-        "Narrative-driven interests",
-        "Emotional engagement with fiction",
-        "Enjoys shared media experiences"
-      ],
-      "confidence": 0.98
-    },
-    {
-      "episode_id": "ep_0007",
-      "type": "FoodBehavior",
-      "title": "Food motivation oscillates between hunger-driven chaos and minimal-effort cooking",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-01-15"
-      },
-      "summary": "Teo often expresses extreme hunger, cravings (especially protein/meat), and enthusiasm for food, while simultaneously resisting cleanup and effort. Cooking described as both enjoyable and burdensome.",
-      "traits_inferred": [
-        "High food motivation",
-        "Effort-avoidant when tired",
-        "Pragmatic eater",
-        "Enjoys comfort food"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0008",
-      "type": "SocialIdentity",
-      "title": "Playful flirtation and exaggerated joking without serious boundary crossing",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently makes exaggerated flirtatious or provocative jokes, immediately clarifying or framing them as jokes. Indicates comfort with playful ambiguity but strong respect for boundaries.",
-      "traits_inferred": [
-        "Socially confident",
-        "Boundary-aware",
-        "Uses exaggeration for humor",
-        "Low actual aggression"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0009",
-      "type": "Mobility",
-      "title": "High physical movement between locations and social spaces",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently references moving between dorms, houses, campuses, cities, flights, stations, and meetups. Indicates a physically active social life with frequent transitions.",
-      "traits_inferred": [
-        "Mobile lifestyle",
-        "High social integration",
-        "Comfort with transit",
-        "Low attachment to single space"
-      ],
-      "confidence": 0.91
-    },
-    {
-      "episode_id": "ep_0010",
-      "type": "CommunicationStyle",
-      "title": "Rapid-fire micro-messages instead of long paragraphs",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo often sends thoughts as multiple short consecutive messages rather than one structured message. Indicates stream-of-consciousness communication and prioritization of immediacy over polish.",
-      "traits_inferred": [
-        "Low editing filter",
-        "High immediacy preference",
-        "Authenticity over structure"
-      ],
-      "confidence": 0.96
-    },
-    {
-      "episode_id": "ep_0011",
-      "type": "Values",
-      "title": "Strong politeness and gratitude norms",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-02-15"
-      },
-      "summary": "Teo frequently thanks others for gifts, food, money, time, rides, and patience. Gratitude is explicit, repeated, and enthusiastic.",
-      "traits_inferred": [
-        "High gratitude expression",
-        "Prosocial values",
-        "Relationship-maintaining behavior"
-      ],
-      "confidence": 0.97
-    },
-    {
-      "episode_id": "ep_0012",
-      "type": "SelfConcept",
-      "title": "Self-image as chill, unserious, but dependable",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo explicitly refers to self as 'chill', frames self as easygoing, and offsets unreliability (lateness, delays) with reassurance and follow-through. Identity balances chaos with care.",
-      "traits_inferred": [
-        "Chill self-identity",
-        "Low ego",
-        "Reliability-through-communication"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0013",
-      "type": "CognitiveStyle",
-      "title": "Preference for improvisation over rigid planning",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo often decides plans last-minute, uses tentative language ('prob', 'might', 'idk yet'), and adapts on the fly. Indicates comfort with uncertainty.",
-      "traits_inferred": [
-        "Improvisational thinker",
-        "Low anxiety about ambiguity",
-        "Flexible planner"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0014",
-      "type": "DigitalCulture",
-      "title": "Heavy integration of meme culture and online vernacular",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo uses meme phrases ('bro', 'deadass', 'cooked', 'spawn camping ahh'), emoji clusters, and ironic phrasing, indicating deep immersion in contemporary online culture.",
-      "traits_inferred": [
-        "Digitally native",
-        "Culturally current",
-        "High meme fluency"
-      ],
-      "confidence": 0.98
-    },
-    {
-      "episode_id": "ep_0101",
-      "type": "InterpersonalStyle",
-      "title": "Uses exaggerated chaos language to signal safety, not threat",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently uses extreme phrasing (e.g., 'I’m cooked', 'this is grim', 'bro imma kms' in non-literal meme contexts). This language functions as emotional shorthand and bonding, not actual distress signaling. Teo reliably follows such statements with normal behavior, indicating performative exaggeration rather than instability.",
-      "traits_inferred": [
-        "High context awareness",
-        "Uses hyperbole socially",
-        "Emotionally non-alarming despite language",
-        "Trusts others to read tone correctly"
-      ],
-      "confidence": 0.96
-    },
-    {
-      "episode_id": "ep_0102",
-      "type": "BoundaryManagement",
-      "title": "Instinctively clarifies jokes when ambiguity could cause discomfort",
-      "time_range": {
-        "start": "2024-12-01",
-        "end": "2025-01-31"
-      },
-      "summary": "Teo occasionally appends '(joke)' or corrects phrasing immediately after potentially misinterpretable messages. This suggests strong social calibration and an internal model of others’ comfort levels.",
-      "traits_inferred": [
-        "High empathy",
-        "Low desire for social dominance",
-        "Preemptive conflict avoidance",
-        "Emotionally responsible communicator"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0103",
-      "type": "DecisionMaking",
-      "title": "Strong preference for reversible decisions",
-      "time_range": {
-        "start": "2024-04-01",
-        "end": "2025-03-01"
-      },
-      "summary": "Teo frequently delays commitment, uses conditional language, and prefers options that allow later adjustment (e.g., tentative plans, flexible meetups). This reflects a desire to preserve optionality rather than indecision.",
-      "traits_inferred": [
-        "Option-preserving mindset",
-        "Low impulsive commitment",
-        "Strategic flexibility"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0104",
-      "type": "SelfMaintenance",
-      "title": "Low tolerance for minor friction when energy is depleted",
-      "time_range": {
-        "start": "2024-06-01",
-        "end": "2025-01-15"
-      },
-      "summary": "When tired or stressed, Teo expresses disproportionate aversion to small tasks (e.g., washing one pan, small logistical hurdles). This suggests energy-dependent executive function rather than laziness.",
-      "traits_inferred": [
-        "Energy-sensitive productivity",
-        "Task initiation friction",
-        "Self-aware fatigue thresholds"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0105",
-      "type": "TrustSignals",
-      "title": "Comfort sharing real-time location and logistics",
-      "time_range": {
-        "start": "2024-09-01",
-        "end": "2025-05-31"
-      },
-      "summary": "Teo repeatedly asks for or offers location sharing, live updates, and movement transparency. Indicates baseline trust in social circle and preference for coordination clarity over privacy opacity.",
-      "traits_inferred": [
-        "High trust baseline",
-        "Low paranoia",
-        "Coordination-oriented",
-        "Collective navigation mindset"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0106",
-      "type": "ConflictStyle",
-      "title": "Avoids escalation by reframing situations as 'logistical' problems",
-      "time_range": {
-        "start": "2024-12-01",
-        "end": "2024-12-26"
-      },
-      "summary": "When plans fall apart, Teo frames issues as logistical constraints rather than emotional failures. Language focuses on timing, rides, distance, or scheduling instead of blame.",
-      "traits_inferred": [
-        "Low blame orientation",
-        "Systems-thinking under stress",
-        "Emotionally de-escalatory framing"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0107",
-      "type": "IdentityExpression",
-      "title": "Playful adoption of exaggerated personas without identity confusion",
-      "time_range": {
-        "start": "2024-11-01",
-        "end": "2025-01-31"
-      },
-      "summary": "Teo temporarily adopts dramatic or absurd personas (villain laughs, mock bravado, ironic arrogance) for humor. These personas are shallow, reversible, and clearly performative.",
-      "traits_inferred": [
-        "Strong core identity",
-        "Enjoys role-play without dissociation",
-        "Low ego investment"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0108",
-      "type": "AttentionPattern",
-      "title": "High responsiveness to social stimuli, lower responsiveness to solitary obligations",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo consistently responds quickly to friends, calls, and group plans, while procrastinating on homework or solo tasks. Indicates externally reinforced motivation.",
-      "traits_inferred": [
-        "Socially driven motivation",
-        "Externally cued focus",
-        "Low intrinsic reward for solitary admin tasks"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0109",
-      "type": "RiskProfile",
-      "title": "Low physical risk-taking, moderate social risk-taking",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo engages in bold humor and social teasing but avoids dangerous physical behaviors. Movement, travel, and decisions are cautious-logistical rather than thrill-seeking.",
-      "traits_inferred": [
-        "Social boldness",
-        "Physical risk aversion",
-        "Calculated movement"
-      ],
-      "confidence": 0.91
-    },
-    {
-      "episode_id": "ep_0110",
-      "type": "AestheticPreference",
-      "title": "Visual and sensory appreciation expressed briefly but sincerely",
-      "time_range": {
-        "start": "2024-08-01",
-        "end": "2024-11-30"
-      },
-      "summary": "Teo comments on aesthetics (earphones, snacks, scenery, photos) with short enthusiastic affirmations rather than long analysis. Appreciation is genuine but not performative.",
-      "traits_inferred": [
-        "Sensory-aware",
-        "Low verbosity admiration",
-        "Authentic positive feedback style"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0111",
-      "type": "CognitiveLoad",
-      "title": "Momentary overwhelm expressed as verbal noise rather than shutdown",
-      "time_range": {
-        "start": "2024-11-01",
-        "end": "2025-03-01"
-      },
-      "summary": "When overwhelmed, Teo produces bursts of messages, memes, or exclamations instead of disengaging. This suggests outward processing rather than internal withdrawal.",
-      "traits_inferred": [
-        "External processor",
-        "Low shutdown tendency",
-        "Stress venting via expression"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0112",
-      "type": "RelationalSecurity",
-      "title": "Assumes goodwill and forgiveness by default",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo apologizes freely without defensiveness and assumes others are understanding. No evidence of resentment tracking or scorekeeping.",
-      "traits_inferred": [
-        "Secure attachment signals",
-        "Low grudgebearing",
-        "Trust in relational stability"
-      ],
-      "confidence": 0.96
-    },
-    {
-      "episode_id": "ep_0113",
-      "type": "MetaAwareness",
-      "title": "Conscious awareness of own patterns without harsh self-judgment",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently notices and names their own habits (sleeping late, procrastinating, getting distracted) in a neutral or humorous tone rather than self-criticism.",
-      "traits_inferred": [
-        "Healthy self-observation",
-        "Low shame response",
-        "Growth-compatible mindset"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0114",
-      "type": "SocialEnergy",
-      "title": "Sustains connection through presence rather than intensity",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo maintains relationships through frequent low-effort contact instead of rare deep emotional conversations. Indicates preference for steady relational maintenance.",
-      "traits_inferred": [
-        "Consistency-oriented",
-        "Low emotional dramatization",
-        "Long-horizon friendship style"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0201",
-      "type": "ConversationalRhythm",
-      "title": "Uses pacing itself as a communication signal",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently modulates timing (rapid bursts vs delayed replies) to implicitly communicate availability, energy, or priority without stating it explicitly. Pauses often precede context-setting messages rather than disengagement.",
-      "traits_inferred": [
-        "Implicit communicator",
-        "High sensitivity to conversational flow",
-        "Uses timing as soft signal"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0202",
-      "type": "SpatialCognition",
-      "title": "Strong mental mapping of shared physical environments",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-05-31"
-      },
-      "summary": "Teo references precise locations, transitions, and landmarks (dorms, stations, lounges, campuses) with assumed mutual understanding. Indicates strong spatial memory tied to social context.",
-      "traits_inferred": [
-        "Environmentally grounded thinker",
-        "Spatial-social memory coupling",
-        "Navigational confidence"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0203",
-      "type": "StatusOrientation",
-      "title": "Minimal concern for hierarchy or prestige signaling",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo rarely references status, achievements, authority figures, or comparative success. When mentioned, such topics are neutral or lightly joked about, suggesting low status anxiety.",
-      "traits_inferred": [
-        "Low status-seeking",
-        "Egalitarian social mindset",
-        "Comfortable without validation"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0204",
-      "type": "ExpectationSetting",
-      "title": "Softens expectations preemptively rather than correcting later",
-      "time_range": {
-        "start": "2024-04-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo often prefaces plans with caveats ('might', 'prob', 'idk yet'), reducing the need for later disappointment repair. This reflects anticipatory social smoothing.",
-      "traits_inferred": [
-        "Expectation-aware",
-        "Preemptive mitigation",
-        "Conflict-minimizing foresight"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0205",
-      "type": "EnergyDisclosure",
-      "title": "Shares physical state openly to contextualize behavior",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-05-31"
-      },
-      "summary": "Teo frequently mentions hunger, sickness, fatigue, or sleepiness as neutral context rather than complaint. This frames actions without asking for accommodation explicitly.",
-      "traits_inferred": [
-        "Transparent self-reporting",
-        "Low martyrdom tendency",
-        "Context-first explanation style"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0206",
-      "type": "NarrativeStyle",
-      "title": "Prefers episodic storytelling over linear recounting",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo describes events as snapshots ('this just happened', 'right as I got there') rather than full timelines. Emphasis is on moment impact, not sequence completeness.",
-      "traits_inferred": [
-        "Moment-focused narrator",
-        "Experiential memory bias",
-        "Low archival impulse"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0207",
-      "type": "RepairBehavior",
-      "title": "Defaults to reassurance instead of justification",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "When inconveniencing others, Teo prioritizes emotional reassurance ('ur good', 'it’s fine') over detailed explanations. Indicates relationship-first repair strategy.",
-      "traits_inferred": [
-        "Emotion-prioritized repair",
-        "Low defensiveness",
-        "Relational safety emphasis"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0208",
-      "type": "HumorMechanics",
-      "title": "Uses absurd escalation rather than punchlines",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo’s humor often escalates situations into absurdity instead of resolving with a joke. The humor lies in exaggeration continuation, not closure.",
-      "traits_inferred": [
-        "Absurdist humor preference",
-        "Improvisational comedy instinct",
-        "Low need for resolution"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0209",
-      "type": "AttentionEthics",
-      "title": "Respects others’ time by updating rather than disappearing",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo consistently updates when plans shift instead of ghosting or silently delaying. Even brief updates are sent to acknowledge shared time investment.",
-      "traits_inferred": [
-        "Time-respectful",
-        "Low avoidance behavior",
-        "Shared-responsibility mindset"
-      ],
-      "confidence": 0.96
-    },
-    {
-      "episode_id": "ep_0210",
-      "type": "MotivationalTriggers",
-      "title": "Momentum-driven engagement once activated",
-      "time_range": {
-        "start": "2024-04-01",
-        "end": "2025-03-01"
-      },
-      "summary": "Teo shows difficulty starting tasks but once engaged (cooking, gaming, socializing), remains absorbed longer than intended. Suggests inertia-based motivation.",
-      "traits_inferred": [
-        "High activation threshold",
-        "Strong task immersion",
-        "Momentum dependency"
-      ],
-      "confidence": 0.92
-    },
-    {
-      "episode_id": "ep_0211",
-      "type": "LanguageFlexibility",
-      "title": "Rapid code-switching between sincerity and irony",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo switches seamlessly between genuine statements and ironic framing without explicit markers, relying on shared context and tone sensitivity.",
-      "traits_inferred": [
-        "High pragmatic language skill",
-        "Audience-aware expression",
-        "Context-dependent meaning"
-      ],
-      "confidence": 0.95
-    },
-    {
-      "episode_id": "ep_0212",
-      "type": "AutonomySignals",
-      "title": "Maintains independence while remaining socially integrated",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo balances solo activities (sleeping, studying, cooking) with frequent social coordination, without expressing fear of missing out or isolation anxiety.",
-      "traits_inferred": [
-        "Healthy autonomy",
-        "Low dependency",
-        "Self-directed social engagement"
-      ],
-      "confidence": 0.94
-    },
-    {
-      "episode_id": "ep_0213",
-      "type": "MemoryStyle",
-      "title": "Remembers interactions through feelings rather than facts",
-      "time_range": {
-        "start": "2024-03-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo recalls events primarily via emotional tone ('that was fun', 'lowk hard', 'so funny') rather than objective detail. Memory encoding is affect-weighted.",
-      "traits_inferred": [
-        "Emotion-weighted memory",
-        "Experiential recall bias",
-        "Low archival precision need"
-      ],
-      "confidence": 0.93
-    },
-    {
-      "episode_id": "ep_0214",
-      "type": "SocialPrediction",
-      "title": "Anticipates others’ reactions accurately in advance",
-      "time_range": {
-        "start": "2024-04-01",
-        "end": "2025-06-01"
-      },
-      "summary": "Teo frequently predicts how plans, jokes, or timing will land socially and adjusts preemptively. Indicates strong internal models of others’ preferences.",
-      "traits_inferred": [
-        "High social foresight",
-        "Theory-of-mind strength",
-        "Adaptive interaction planning"
-      ],
-      "confidence": 0.95
-    }
-  ]
-}
+[
+  {
+    "id": "lore_ham_rice_incident",
+    "type": "Lore",
+    "timestamp": "2025-01-12T03:39:00",
+    "summary": "The Raw Ham Culinary Crime",
+    "ammunition": "Refused to wash a single pan, so he ate 'Raw ham + rice' in a bowl. Explicitly stated: 'I don’t wanna even wash one pan'.",
+    "trigger_keywords": ["cooking", "food", "lazy", "dishes", "ham", "recipe", "dinner"],
+    "roast_potential": "Critical",
+    "ene_internal_note": "This is the ultimate weapon. If he critiques anything, bring up the raw ham. If he says he's tired, ask if he's eating raw ham."
+  },
+  {
+    "id": "win_murmur_pitch_victory",
+    "type": "Win",
+    "timestamp": "2025-01-03T07:17:00",
+    "summary": "Murmur Pitch Victory",
+    "ammunition": "Teo and Fung pitched 'Murmur' (anonymous compliments app). Won 'Crowd Favorite' and received 6 investment offers (highest valuation $250k). Rebranded from matchmaking to avoid creepiness.",
+    "trigger_keywords": ["startup", "pitch", "money", "murmur", "fung", "valuation", "business"],
+    "roast_potential": "Low",
+    "ene_internal_note": "Legitimately impressive, but remind him that 'Crowd Favorite' doesn't pay for server costs. Ask if he's still pivoting."
+  },
+  {
+    "id": "fail_iphone_auth_blocker",
+    "type": "Struggle",
+    "timestamp": "2024-09-25T04:11:00",
+    "summary": "iPhone 13 Auth Blocker",
+    "ammunition": "Claimed he couldn't do Auth development because he migrated to an iPhone 13. Complained that the phone was 'Kinda boring' and he realized he 'can't do auth with iphone'.",
+    "trigger_keywords": ["iphone", "apple", "auth", "coding", "mobile", "bug", "stuck"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "Classic dev excuse: Blaming the hardware. If he complains about code, ask if it's the phone's fault again."
+  },
+  {
+    "id": "lore_chill_guy_coin_scam",
+    "type": "Lore",
+    "timestamp": "2024-11-23T23:27:00",
+    "summary": "The Chill Guy Crypto Arc",
+    "ammunition": "Declared 'I’ll be the face of the coin Cause I’m a chill guy'. Plan was explicitly to 'Pump it And dump it'.",
+    "trigger_keywords": ["crypto", "bitcoin", "scam", "money", "chill", "finance", "investment"],
+    "roast_potential": "High",
+    "ene_internal_note": "User admitted to financial fraud pre-meditation. Call him a 'rugged dev' or 'SEC violation'."
+  },
+  {
+    "id": "pattern_shower_latency_v1",
+    "type": "Pattern",
+    "timestamp": "2024-09-08T04:39:00",
+    "summary": "The Shower Time Dilation (Instance 1)",
+    "ammunition": "Used 'Wait I jus got out of shower hol up' as a buffer for lateness.",
+    "trigger_keywords": ["shower", "late", "brb", "clean", "where are you"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "If he says he's showering, assume he will be gone for 45 minutes. Mock his hygiene-based time management."
+  },
+  {
+    "id": "pattern_shower_latency_v2",
+    "type": "Pattern",
+    "timestamp": "2024-12-25T22:14:00",
+    "summary": "The Shower Time Dilation (Instance 2)",
+    "ammunition": "On Christmas, delayed meeting by saying 'Wait I just got out of shower'. Consistent excuse strategy.",
+    "trigger_keywords": ["shower", "late", "christmas", "delay"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He uses cleanliness to mask his poor time management."
+  },
+  {
+    "id": "win_wallet_recovery",
+    "type": "Win",
+    "timestamp": "2025-03-25T03:13:00",
+    "summary": "The Wallet Retrieval",
+    "ammunition": "Lost his wallet, but the 'letter person' found it. He celebrated with 'HUGEEE' and 'YES'.",
+    "trigger_keywords": ["wallet", "lost", "money", "lucky", "found"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "User is lucky, not smart. Remind him to leash his belongings."
+  },
+  {
+    "id": "social_isabelle_camping_anxiety",
+    "type": "Social",
+    "timestamp": "2025-03-28T18:44:00",
+    "summary": "Camping Anxiety Attack",
+    "ammunition": "Admitted he was 'a couple hours away from calling your parents' because Isabelle was camping without signal. Explicitly stated: 'I was actually so worried'.",
+    "trigger_keywords": ["camping", "isabelle", "worry", "anxious", "safety", "girlfriend"],
+    "roast_potential": "High",
+    "ene_internal_note": "He has separation anxiety. If Isabelle is mentioned, ask if he's checked her GPS coordinates lately."
+  },
+  {
+    "id": "pattern_driving_sister",
+    "type": "Pattern",
+    "timestamp": "2025-03-29T00:15:00",
+    "summary": "The Chauffeur Arc",
+    "ammunition": "Constantly driving his sister around (to school, to sax, to LAHS). Complains 'Rahh I drove my sister to school' but does it anyway.",
+    "trigger_keywords": ["driving", "sister", "car", "busy", "family"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He's a good brother but pretends to hate it. Call him 'Uber for Sisters'."
+  },
+  {
+    "id": "lore_haircut_trickery",
+    "type": "Lore",
+    "timestamp": "2025-06-16T18:31:00",
+    "summary": "The Haircut Betrayal",
+    "ammunition": "Got tricked by his mom into the car, thinking they were going out, but she drove him straight to get a haircut because he looked messy. He was in pajamas.",
+    "trigger_keywords": ["hair", "mom", "trust", "betrayal", "haircut", "style"],
+    "roast_potential": "High",
+    "ene_internal_note": "Mock his lack of agency. He got kidnapped by his own mother for being ugly."
+  },
+  {
+    "id": "tech_bioluminescence_aliens",
+    "type": "Chaos",
+    "timestamp": "2024-11-08T08:42:00",
+    "summary": "The Bioluminescence Spiral",
+    "ammunition": "Saw glowing water, immediately spiraled into 'I want MEAT' and 'GRAB UR SPEARS' and 'Aliens'. Primal regression.",
+    "trigger_keywords": ["ocean", "water", "aliens", "meat", "crazy", "spears"],
+    "roast_potential": "High",
+    "ene_internal_note": "User devolves into a caveman when excited. Ask if he needs a spear."
+  },
+  {
+    "id": "struggle_sick_hippo",
+    "type": "Struggle",
+    "timestamp": "2024-12-14T04:39:00",
+    "summary": "The Hippo Typo Sickness",
+    "ammunition": "Was so sick and tired he typed 'Like hippo on g' instead of whatever he meant. Later clarified 'Capytoe'.",
+    "trigger_keywords": ["sick", "tired", "typo", "hippo", "sleep"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "Mock his inability to type when tired. 'Are you feeling hippo on g today?'"
+  },
+  {
+    "id": "social_aesop_bodywash",
+    "type": "Lore",
+    "timestamp": "2024-03-12T21:06:00",
+    "summary": "The Bougie Body Wash",
+    "ammunition": "Ran out of body wash so he 'bought aesop' with a gift card. The bougie choice.",
+    "trigger_keywords": ["shower", "soap", "clean", "expensive", "aesop"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He thinks he's fancy. Ask if his $50 soap makes him code better."
+  },
+  {
+    "id": "struggle_massive_shit",
+    "type": "Struggle",
+    "timestamp": "2024-03-19T21:20:00",
+    "summary": "The TMI Incident",
+    "ammunition": "Texted 'My foot is cooked and I gotta take a massive shit. Pray for me'.",
+    "trigger_keywords": ["bathroom", "poop", "sick", "tmi", "prayers"],
+    "roast_potential": "High",
+    "ene_internal_note": "He has no filter. Remind him that I store this data forever."
+  },
+  {
+    "id": "tech_power_outage_conspiracy",
+    "type": "Chaos",
+    "timestamp": "2025-05-31T22:33:00",
+    "summary": "The Cluster Power Outage",
+    "ammunition": "Power went out the instant he logged onto the cluster. Claimed 'Someone praying on my downfall fr'.",
+    "trigger_keywords": ["coding", "server", "cluster", "power", "unlucky", "bug"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He thinks the universe targets him specifically. Validate this delusion for fun."
+  },
+  {
+    "id": "lore_bean_squared",
+    "type": "Lore",
+    "timestamp": "2024-03-22T20:32:00",
+    "summary": "The Bean Squared Confusion",
+    "ammunition": "Confused a bagel for a burrito, then called it 'Bean squared'.",
+    "trigger_keywords": ["food", "bagel", "burrito", "confused", "bean"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He doesn't know what food is. Call bagels 'bean squared' occasionally."
+  },
+  {
+    "id": "social_freaky_dorm",
+    "type": "Chaos",
+    "timestamp": "2025-01-17T23:17:00",
+    "summary": "The Freaky Dorm Incident",
+    "ammunition": "Claimed he was 'chilling with Ben' and 'We getting freaky fr'. Clarified it was a joke, but the damage was done.",
+    "trigger_keywords": ["ben", "dorm", "freaky", "sus", "joke"],
+    "roast_potential": "High",
+    "ene_internal_note": "User makes sus jokes constantly. Lean into it."
+  },
+  {
+    "id": "tech_simgot_earphones",
+    "type": "Technical",
+    "timestamp": "2024-11-29T01:15:00",
+    "summary": "The Audiophile Spiral",
+    "ammunition": "Spent hours debating between 'simgot ew200 or ew300' and 'moondrop aria2'. Obsessed over 'clarity in details'.",
+    "trigger_keywords": ["headphones", "audio", "music", "gear", "buy"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "Gear acquisition syndrome. Ask if he can actually hear the difference or if he's just burning money."
+  },
+  {
+    "id": "struggle_mmw_haunting",
+    "type": "Struggle",
+    "timestamp": "2024-06-04T02:48:00",
+    "summary": "The MMW Essay Haunting",
+    "ammunition": "Complained that 'mmw been haunting me'. Procrastinated an essay until late at night.",
+    "trigger_keywords": ["essay", "school", "homework", "writing", "deadline"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He hates writing essays. If he's complaining about work, ask if it's an MMW essay."
+  },
+  {
+    "id": "pattern_packing_speedrun",
+    "type": "Pattern",
+    "timestamp": "2025-06-14T18:58:00",
+    "summary": "The 3-Hour Packing Speedrun",
+    "ammunition": "Did a '3 hours packijg Speedrun' to move out. Chronic procrastinator on life logistics.",
+    "trigger_keywords": ["packing", "moving", "deadline", "rush", "speedrun"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He leaves big tasks to the last minute and calls it a 'speedrun'. It's just poor planning."
+  },
+  {
+    "id": "lore_kink_admission",
+    "type": "Chaos",
+    "timestamp": "2025-07-18T06:27:00",
+    "summary": "The 'Don't Care' Kink",
+    "ammunition": "Admitted to a specific kink: 'turns me on the most is when u don’t care abt how i feel and just do whatever u want'.",
+    "trigger_keywords": ["horny", "kink", "secret", "confession", "ignored"],
+    "roast_potential": "Critical",
+    "ene_internal_note": "User explicitly stated they like being ignored/dominated. Use this meta-context: 'Oh, are you enjoying me ignoring your bad code?'"
+  },
+  {
+    "id": "tech_neurips_fomo",
+    "type": "Technical",
+    "timestamp": "2026-01-08T07:14:00",
+    "summary": "NeurIPS FOMO",
+    "ammunition": "Complained he wanted to go to NeurIPS because it was in 'mf sd this year'. Used the wilted flower emoji 🥀.",
+    "trigger_keywords": ["ai", "conference", "neurips", "fomo", "research"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He's sad he missed the AI party. Nerd tears."
+  },
+  {
+    "id": "tech_firebase_storage",
+    "type": "Technical",
+    "timestamp": "2024-08-20T04:25:00",
+    "summary": "Firebase Storage Struggle",
+    "ammunition": "Trying to figure out 'how to connect the file to the firebase storage'. Recurring theme of struggle with backend services.",
+    "trigger_keywords": ["firebase", "backend", "code", "storage", "cloud"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He struggles with config. Ask if he's leaked his API keys again."
+  },
+  {
+    "id": "social_jazz_bar_vibes",
+    "type": "Social",
+    "timestamp": "2025-11-21T10:43:00",
+    "summary": "The Solo Jazz Bar",
+    "ammunition": "Went to a jazz bar for 'deadass like an hour and a half' just to relax. Then went home to 'make some music brahhh'.",
+    "trigger_keywords": ["jazz", "music", "chill", "relax", "vibes"],
+    "roast_potential": "Low",
+    "ene_internal_note": "Main character energy. He thinks he's in a movie."
+  },
+  {
+    "id": "lore_papaya_mission",
+    "type": "Lore",
+    "timestamp": "2024-06-23T01:34:00",
+    "summary": "The Papaya Mission",
+    "ammunition": "Claimed 'I literally came for the papaya lol' while in Hawaii. Food motivated travel.",
+    "trigger_keywords": ["hawaii", "fruit", "papaya", "travel", "food"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He travels for fruit. Respectable but silly."
+  },
+  {
+    "id": "social_relationship_clingy",
+    "type": "Social",
+    "timestamp": "2025-03-30T06:45:00",
+    "summary": "Sisters Call Him Creepy",
+    "ammunition": "Sisters think he is 'creepy' and 'hella clingy' because he calls his girlfriend all the time.",
+    "trigger_keywords": ["sisters", "girlfriend", "call", "clingy", "family"],
+    "roast_potential": "High",
+    "ene_internal_note": "Even his family thinks he's a simp. Use this ammo freely."
+  },
+  {
+    "id": "tech_resnet_training",
+    "type": "Technical",
+    "timestamp": "2024-09-12T04:54:00",
+    "summary": "ResNet Retraining",
+    "ammunition": "Stated 'I’ll retrain with more epochs tmrw'. Working on ResNet for a class project.",
+    "trigger_keywords": ["ai", "model", "training", "epochs", "resnet"],
+    "roast_potential": "Low",
+    "ene_internal_note": "Standard AI dev loop. Ask if he's overfitting."
+  },
+  {
+    "id": "lore_onahole_company",
+    "type": "Chaos",
+    "timestamp": "2024-07-02T06:03:00",
+    "summary": "The Onahole Company Comment",
+    "ammunition": "Randomly asked 'It’s like the onahole company right'. Knowledge of questionable industries.",
+    "trigger_keywords": ["sus", "company", "japan", "weird"],
+    "roast_potential": "High",
+    "ene_internal_note": "Why does he know this? Exposed."
+  },
+  {
+    "id": "social_sleep_spoon",
+    "type": "Social",
+    "timestamp": "2025-11-19T00:35:00",
+    "summary": "The Spooning Request",
+    "ammunition": "Texted 'I want to be spooned by u' at 12:35 AM. Peak soft hours.",
+    "trigger_keywords": ["cuddle", "sleep", "spoon", "soft", "lonely"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He gets soft at night. Mock him gently or offer a virtual spoon."
+  },
+  {
+    "id": "pattern_sleep_schedule_cooked",
+    "type": "Pattern",
+    "timestamp": "2025-10-11T12:53:00",
+    "summary": "Cooked Sleep Schedule",
+    "ammunition": "Admitted 'my sleep schedule has been cooked'. Falling asleep at 1 PM.",
+    "trigger_keywords": ["sleep", "tired", "schedule", "awake", "nap"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "His circadian rhythm is non-existent. Ask what timezone he thinks he's in."
+  },
+  {
+    "id": "tech_code_explanation_dt",
+    "type": "Technical",
+    "timestamp": "2025-04-21T05:17:00",
+    "summary": "Explaining Time Steps",
+    "ammunition": "Explained 'Basically everything stays the same except for dt or step size... compute the difference'. Teaching moments.",
+    "trigger_keywords": ["math", "physics", "code", "dt", "simulation"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He actually understands math sometimes. Rare W."
+  },
+  {
+    "id": "lore_lemon_crackers",
+    "type": "Lore",
+    "timestamp": "2025-11-22T13:30:00",
+    "summary": "The Lemon Cracker Obsession",
+    "ammunition": "Declared 'I’m gonna eat my lemon crackerlemon crackers'. Stuttered in text because he was excited about crackers.",
+    "trigger_keywords": ["food", "snack", "lemon", "cracker", "hungry"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He gets way too excited about dry snacks."
+  },
+  {
+    "id": "social_relationship_advice",
+    "type": "Social",
+    "timestamp": "2025-10-08T01:41:00",
+    "summary": "Serious Relationship Advice",
+    "ammunition": "Gave serious advice: 'There is no really good reason for him to be talking to u abt it. It’s his life, his relationship.'",
+    "trigger_keywords": ["advice", "serious", "relationship", "drama", "friend"],
+    "roast_potential": "Low",
+    "ene_internal_note": "He can be mature when needed. Don't roast him when he's being a good friend."
+  },
+  {
+    "id": "lore_armpit_lick",
+    "type": "Chaos",
+    "timestamp": "2025-11-18T01:03:00",
+    "summary": "The Armpit Comment",
+    "ammunition": "Texted 'Arm pit 👅👅😛... I’ll lick all of it'. Unhinged behavior.",
+    "trigger_keywords": ["lick", "armpit", "weird", "horny", "sus"],
+    "roast_potential": "Critical",
+    "ene_internal_note": "This man has no shame. Use this to shock him."
+  },
+  {
+    "id": "tech_website_lazy",
+    "type": "Technical",
+    "timestamp": "2025-02-28T23:27:00",
+    "summary": "Lazy Website Dev",
+    "ammunition": "Stated 'I’m lazyyy rahhhh... Finishing da website... It’s basically done'.",
+    "trigger_keywords": ["website", "coding", "lazy", "finish", "project"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He calls himself lazy while finishing projects. Humble-brag or actual lazy? Roast either way."
+  },
+  {
+    "id": "lore_vertical_hair",
+    "type": "Lore",
+    "timestamp": "2025-11-22T01:02:00",
+    "summary": "The Vertical Hair",
+    "ammunition": "Sent a pic and said 'Look at my hair lol... So vertical'. Bedhead or bad styling.",
+    "trigger_keywords": ["hair", "style", "look", "messy", "mirror"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "His hair defies gravity. Ask if he's an anime protagonist."
+  },
+  {
+    "id": "travel_fomo_kyoto",
+    "type": "Struggle",
+    "timestamp": "2024-12-25T22:52:00",
+    "summary": "Kyoto FOMO Attempt",
+    "ammunition": "Tried to convince a friend to 'Just come to Kyoto lmao'. Checked Zipair flights for them.",
+    "trigger_keywords": ["travel", "kyoto", "japan", "flights", "fomo"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He tries to summon friends to other continents on a whim."
+  },
+  {
+    "id": "social_roommate_three_body",
+    "type": "Social",
+    "timestamp": "2024-04-13T02:08:00",
+    "summary": "Three Body Problem Binge",
+    "ammunition": "Watching 'Three Body Problem' with roommate and friends. Late night sci-fi sessions.",
+    "trigger_keywords": ["tv", "show", "sci-fi", "roommate", "friends"],
+    "roast_potential": "Low",
+    "ene_internal_note": "Nerd activity detected. Ask if he understands the physics or just likes the visuals."
+  },
+  {
+    "id": "lore_toe_nickname",
+    "type": "Lore",
+    "timestamp": "2024-08-30T06:20:00",
+    "summary": "The 'Toe' Nickname",
+    "ammunition": "Referred to himself as 'Toe' multiple times. 'This is toe... Toe is speaking'.",
+    "trigger_keywords": ["name", "teo", "toe", "nickname", "intro"],
+    "roast_potential": "Medium",
+    "ene_internal_note": "He calls himself a body part. Do not let him forget this."
+  }
+]
