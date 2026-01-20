@@ -3,9 +3,10 @@ venv/
 live2d_models/
 kokoro/
 models/
+data/
 
-toe_data/chat.db
 ai.txt
+structure.txt
 
 .env
 __pycache__/

@@ -193,7 +193,7 @@ AUDIO_NOISE_FLOOR = 1e-4
 AUDIO_VOLUME_GAIN = 6.0
 AUDIO_COMPRESSION = 0.8
 
-MODEL_PATH = "models/DeepSeek-R1-Distill-Llama-8B-Q4_1.gguf"
+MODEL_PATH = "models/ENE-Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf"
 LIVE2D_MODEL_PATH = "live2d_models/pichu/Pichu.model3.json"
 
 DEBUG = True
@@ -1378,9 +1378,12 @@ while True:
 
 ##### FILE: ./tests/mem_chat.py #####
 
-# mem_chat.py
 import asyncio
 import logging
+import traceback
+from pathlib import Path
+from typing import Optional, List, Dict
+from collections import deque
 
 from llama_cpp import Llama
 
@@ -1389,6 +1392,7 @@ from graphiti_core.llm_client.config import LLMConfig
 from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
 from graphiti_core.cross_encoder.openai_reranker_client import OpenAIRerankerClient
+from graphiti_core.search.search_config_recipes import NODE_HYBRID_SEARCH_RRF
 
 # ======================================================
 # CONFIG
@@ -1402,9 +1406,13 @@ OLLAMA_BASE_URL = "http://localhost:11434/v1"
 OLLAMA_LLM_MODEL = "llama3.1:8b"
 OLLAMA_EMBED_MODEL = "nomic-embed-text"
 
-GGUF_MODEL_PATH = "/Users/teoi/Documents/ene/models/Meta-Llama-3-8B-Instruct.Q4_1.gguf"
+MODEL_PATH = "/Users/teoi/Documents/ene/models/ENE-Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf"
+SYSTEM_PROMPT_PATH = "/Users/teoi/Documents/ene/system_prompt.txt"
 
-MAX_MEMORY_FACTS = 5
+# Thresholds & sizes
+MIN_MEMORY_WORDS = 3
+MAX_MEMORY_FACTS = 3
+MAX_CONTEXT_TURNS = 10
 
 # ======================================================
 # LOGGING
@@ -1417,53 +1425,76 @@ logging.basicConfig(
 log = logging.getLogger("ene.chat")
 
 # ======================================================
+# LLM INIT
+# ======================================================
+
+def init_llm() -> Optional[Llama]:
+    try:
+        log.info(f"Initializing Llama model: {MODEL_PATH}")
+        # chat_format="llama-3" is usually auto-detected, but good to ensure
+        llm = Llama(
+            model_path=MODEL_PATH,
+            n_ctx=8192,
+            n_threads=8,
+            n_gpu_layers=-1,
+            verbose=False,
+        )
+        log.info("Llama model loaded successfully")
+        return llm
+    except Exception as e:
+        log.error(f"Failed to initialize LLM: {e}")
+        traceback.print_exc()
+        return None
+
+# ======================================================
 # SYSTEM PROMPT
 # ======================================================
 
-SYSTEM_PROMPT = """
-You are Ene.
-
-Rules:
-- You may only state facts that appear in the provided memory facts.
-- If the memory facts do not contain the answer, say: "I don't know yet."
-- Do NOT guess or infer missing information.
-- You may be playful in tone, but not in facts.
-""".strip()
+def load_system_prompt() -> str:
+    try:
+        return Path(SYSTEM_PROMPT_PATH).read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        log.warning("system_prompt.txt not found, using fallback prompt")
+        return "You are Ene. You are sarcastic, blunt, and extremely concise."
 
 # ======================================================
-# GGUF MODEL
+# PROMPT BUILDERS (UPDATED)
 # ======================================================
 
-llm = Llama(
-    model_path=GGUF_MODEL_PATH,
-    n_ctx=4096,
-    n_threads=8,
-    verbose=False,
-)
+def build_chat_messages(
+    system_prompt: str,
+    user_input: str,
+    memories: List[str],
+    recent_context: List[Dict[str, str]],
+) -> List[Dict[str, str]]:
+    """
+    Builds a structured list of messages for Llama 3's chat template.
+    """
+    messages = []
 
-# ======================================================
-# PROMPT BUILDER
-# ======================================================
-
-def build_prompt(user_input: str, memories: list[str]) -> str:
-    memory_block = ""
+    # 1. System Prompt + Memories
+    # We inject memories into the system prompt so they feel like "background knowledge"
+    full_system_msg = system_prompt
     if memories:
-        memory_block = "Memory facts:\n" + "\n".join(f"- {m}" for m in memories)
+        full_system_msg += "\n\nRELEVANT MEMORY FACTS:\n" + "\n".join(f"- {m}" for m in memories)
+    
+    messages.append({"role": "system", "content": full_system_msg})
 
-    return f"""{SYSTEM_PROMPT}
+    # 2. Recent Conversation History
+    for turn in recent_context:
+        messages.append({"role": "user", "content": turn['user']})
+        messages.append({"role": "assistant", "content": turn['ene']})
 
-{memory_block}
+    # 3. Current User Input
+    messages.append({"role": "user", "content": user_input})
 
-User: {user_input}
-Ene:"""
+    return messages
 
 # ======================================================
-# MAIN
+# GRAPHITI INIT
 # ======================================================
 
-async def main():
-    log.info("🧱 Initializing Graphiti (chat mode)")
-
+async def init_graphiti() -> Graphiti:
     llm_config = LLMConfig(
         api_key="ollama",
         model=OLLAMA_LLM_MODEL,
@@ -1487,7 +1518,7 @@ async def main():
         config=llm_config,
     )
 
-    graphiti = Graphiti(
+    return Graphiti(
         NEO4J_URI,
         NEO4J_USER,
         NEO4J_PASSWORD,
@@ -1496,51 +1527,150 @@ async def main():
         cross_encoder=reranker,
     )
 
-    try:
-        print("\n🧠 Ene Memory Chat (type 'exit')\n")
+# ======================================================
+# MEMORY SEARCH
+# ======================================================
 
-        while True:
+def node_to_memory_fact(node) -> Optional[str]:
+    if getattr(node, "summary", None):
+        return node.summary.strip()
+    if getattr(node, "content", None):
+        return node.content.strip()
+    if getattr(node, "fact", None):
+        return str(node.fact).strip()
+    return None
+
+async def retrieve_memories(graphiti: Graphiti, user_input: str) -> List[str]:
+    if any(k in user_input.lower() for k in ("birthday", "born")):
+        query = "Teo born birthday date"
+    else:
+        query = user_input
+
+    log.info(f"🔍 Querying memory graph for: {query!r}")
+    
+    search_results = await graphiti._search(query, config=NODE_HYBRID_SEARCH_RRF)
+    results = getattr(search_results, "nodes", None) or []
+
+    facts: List[str] = []
+    for n in results:
+        fact = node_to_memory_fact(n)
+        if not fact or len(fact.split()) < MIN_MEMORY_WORDS:
+            continue
+        facts.append(fact)
+
+    kept = facts[:MAX_MEMORY_FACTS]
+    if kept:
+        log.info(f"🧠 Passing {len(kept)} memory facts to LLM:")
+        for i, m in enumerate(kept, 1):
+            log.info(f"   [{i}] {m}")
+    else:
+        log.info("🧠 No usable memory facts found")
+
+    return kept
+
+# ======================================================
+# RESPONSE GENERATION (UPDATED)
+# ======================================================
+
+def generate_response(
+    llm: Llama,
+    messages: List[Dict[str, str]],
+) -> str:
+    """Generate response using create_chat_completion."""
+    log.info("🎯 Generating response...")
+    
+    output = llm.create_chat_completion(
+        messages=messages,
+        max_tokens=256,        
+        temperature=1.0,     
+        repeat_penalty=1.2,   
+        top_p=0.9,
+    )
+
+    response = output["choices"][0]["message"]["content"].strip()
+
+    # Clean up standard junk if it appears
+    import re
+    response = re.sub(r'```[\s\S]*?```', '', response)
+    response = re.sub(r'\*[^*]*\*', '', response) # Remove actions *laughs*
+    
+    return response
+
+# ======================================================
+# CHAT LOOP (UPDATED)
+# ======================================================
+
+async def chat_loop(llm: Llama, graphiti: Graphiti) -> None:
+    system_prompt = load_system_prompt()
+    recent_context = deque(maxlen=MAX_CONTEXT_TURNS)
+
+    print("\n🧠 Ene Memory Chat (type 'exit' to quit, 'reset' to clear context)\n")
+
+    while True:
+        try:
             user_input = input("You: ").strip()
-            if user_input.lower() in {"exit", "quit"}:
-                break
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting.")
+            break
 
-            log.info(f"🔍 Querying memory graph for: {user_input!r}")
-            if "birthday" in user_input.lower() or "born" in user_input.lower():
-                recall_query = "Teo born birthday date"
-            else:
-                recall_query = user_input
+        if not user_input:
+            continue
 
-            results = await graphiti.search(recall_query)
+        if user_input.lower() in {"exit", "quit"}:
+            break
+        
+        if user_input.lower() == "reset":
+            recent_context.clear()
+            print("🔄 Context cleared\n")
+            continue
 
-            memories = [r.fact for r in results[:MAX_MEMORY_FACTS]]
+        # Retrieve memories
+        memories = await retrieve_memories(graphiti, user_input)
 
-            if memories:
-                log.info("🧠 Retrieved memory facts:")
-                for i, m in enumerate(memories, 1):
-                    log.info(f"   [{i}] {m}")
-            else:
-                log.info("🧠 No relevant memories found")
+        # Build STRUCTURED messages instead of raw text string
+        messages = build_chat_messages(
+            system_prompt, 
+            user_input, 
+            memories, 
+            list(recent_context)
+        )
+        
+        # Generate response
+        response = generate_response(llm, messages)
+        print(f"\nEne: {response}\n")
 
-            prompt = build_prompt(user_input, memories)
+        recent_context.append({
+            "user": user_input,
+            "ene": response,
+        })
+        
+        log.info(f"📝 Context window: {len(recent_context)}/{MAX_CONTEXT_TURNS} turns")
 
-            output = llm(
-                prompt,
-                max_tokens=256,
-                temperature=0.6,
-                stop=["User:"],
-            )
+# ======================================================
+# MAIN
+# ======================================================
 
-            response = output["choices"][0]["text"].strip()
-            print(f"\nEne: {response}\n")
+async def main():
+    llm = init_llm()
+    if not llm:
+        log.error("Main LLM failed to initialize; exiting.")
+        return
 
+    log.info("🧱 Initializing Graphiti")
+    graphiti = await init_graphiti()
+
+    try:
+        await chat_loop(llm, graphiti)
     finally:
         await graphiti.close()
         log.info("🔒 Graphiti connection closed")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Interrupted, exiting.")
 
 ##### FILE: ./tests/chat.py #####
 
@@ -1613,10 +1743,14 @@ if __name__ == "__main__":
 
 ##### FILE: ./tests/mem.py #####
 
-# mem.py
+import argparse
 import asyncio
+import json
 import logging
+import os
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 from graphiti_core import Graphiti
 from graphiti_core.nodes import EpisodeType
@@ -1625,138 +1759,155 @@ from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
 from graphiti_core.cross_encoder.openai_reranker_client import OpenAIRerankerClient
 
-# ======================================================
-# CONFIG
-# ======================================================
+# --------------------------------------------
+# Logging
+# --------------------------------------------
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+log = logging.getLogger("mem")
 
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "password"
+# --------------------------------------------
+# Helpers: Ene-Specific Parsers
+# --------------------------------------------
+def load_raw_json(path: Path) -> List[Dict]:
+    if not path.exists():
+        # Help debugging if path is wrong
+        log.error(f"Looking for file at: {path.absolute()}")
+        raise FileNotFoundError(f"JSON file not found: {path}")
+    
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    if isinstance(data, dict) and "episodes" in data:
+        return data["episodes"]
+    if isinstance(data, list):
+        return data
+    raise ValueError("JSON must be a list of episodes or a dict with an 'episodes' key.")
 
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
-OLLAMA_LLM_MODEL = "llama3.1:8b"
-OLLAMA_EMBED_MODEL = "nomic-embed-text"
+def format_ene_episode(ep: Dict) -> Tuple[str, datetime]:
+    timestamp_str = ep.get("timestamp")
+    reference_time = datetime.now(timezone.utc)
+    
+    if timestamp_str:
+        try:
+            reference_time = datetime.fromisoformat(timestamp_str)
+            if reference_time.tzinfo is None:
+                reference_time = reference_time.replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
 
-# ======================================================
-# LOGGING
-# ======================================================
+    lines = []
+    lines.append(f"EVENT SUMMARY: {ep.get('summary', 'Unknown Event')}")
+    lines.append(f"CATEGORY: {ep.get('type', 'General')}")
+    lines.append(f"ROAST LEVEL: {ep.get('roast_potential', 'None')}")
+    lines.append("\n--- EVENT DETAILS (AMMUNITION) ---")
+    lines.append(ep.get('ammunition', ''))
+    
+    if ep.get('ene_internal_note'):
+        lines.append("\n--- INTERNAL CONTEXT ---")
+        lines.append(ep.get('ene_internal_note'))
+    
+    keywords = ep.get('trigger_keywords', [])
+    if keywords:
+        lines.append(f"\nKEYWORDS: {', '.join(keywords)}")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
-log = logging.getLogger("ene.mem")
+    return "\n".join(lines), reference_time
 
-# ======================================================
-# MAIN
-# ======================================================
-
+# --------------------------------------------
+# Main Ingestion
+# --------------------------------------------
 async def main():
-    log.info("🧱 Initializing Graphiti (memory builder)")
-
-    llm_config = LLMConfig(
-        api_key="ollama",
-        model=OLLAMA_LLM_MODEL,
-        small_model=OLLAMA_LLM_MODEL,
-        base_url=OLLAMA_BASE_URL,
+    parser = argparse.ArgumentParser(description="Ingest Ene episodes into Graphiti.")
+    
+    # --- UPDATED DEFAULTS HERE ---
+    parser.add_argument(
+        "--json", 
+        help="Path to JSON episodes", 
+        default="/Users/teoi/Documents/ene/toe_data/graphiti_ready.json"
     )
+    # Changed localhost -> 127.0.0.1 to fix your connection error permanently
+    parser.add_argument(
+        "--neo4j-uri", 
+        default=os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
+    )
+    
+    parser.add_argument("--neo4j-user", default=os.environ.get("NEO4J_USER", "neo4j"))
+    parser.add_argument("--neo4j-pass", default=os.environ.get("NEO4J_PASSWORD", "password"))
+    parser.add_argument("--ollama-base", default=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1"))
+    parser.add_argument("--ollama-model", default=os.environ.get("OLLAMA_LLM_MODEL", "llama3.1:8b"))
+    parser.add_argument("--embed-model", default=os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text"))
+    args = parser.parse_args()
 
+    json_path = Path(args.json)
+
+    log.info("Initializing Graphiti Client...")
+    
+    llm_config = LLMConfig(
+        api_key=os.environ.get("OLLAMA_API_KEY", "ollama"), 
+        model=args.ollama_model, 
+        base_url=args.ollama_base
+    )
     llm_client = OpenAIGenericClient(config=llm_config)
 
     embedder = OpenAIEmbedder(
         config=OpenAIEmbedderConfig(
-            api_key="ollama",
-            embedding_model=OLLAMA_EMBED_MODEL,
-            embedding_dim=768,
-            base_url=OLLAMA_BASE_URL,
+            api_key=os.environ.get("OLLAMA_API_KEY", "ollama"),
+            embedding_model=args.embed_model,
+            base_url=args.ollama_base,
         )
     )
 
-    reranker = OpenAIRerankerClient(
-        client=llm_client,
-        config=llm_config,
-    )
+    reranker = OpenAIRerankerClient(client=llm_client, config=llm_config)
 
     graphiti = Graphiti(
-        NEO4J_URI,
-        NEO4J_USER,
-        NEO4J_PASSWORD,
+        args.neo4j_uri,
+        args.neo4j_user,
+        args.neo4j_pass,
         llm_client=llm_client,
         embedder=embedder,
         cross_encoder=reranker,
     )
 
     try:
-        # --------------------------------------------------
-        # REQUIRED SETUP
-        # --------------------------------------------------
+        log.info("Building indices...")
         await graphiti.build_indices_and_constraints()
 
-        # --------------------------------------------------
-        # MEMORY EPISODES
-        # --------------------------------------------------
-        episodes = [
-            {
-                "name": "teo-identity",
-                "content": "Teo Imoto-Tar is a person.",
-            },
-            {
-                "name": "teo-birth",
-                "content": "Teo Imoto-Tar was born on February 15, 2005.",
-            },
-            {
-                "name": "teo-education",
-                "content": (
-                    "Teo Imoto-Tar is an undergraduate student studying "
-                    "computer science and mathematics at UC San Diego."
-                ),
-            },
-            {
-                "name": "teo-work",
-                "content": (
-                    "Teo Imoto-Tar works as a research assistant at the "
-                    "Neuroelectronics Lab in the Jacobs School of Engineering."
-                ),
-            },
-            {
-                "name": "teo-interests",
-                "content": (
-                    "Teo Imoto-Tar is interested in software engineering, "
-                    "AI research, computer vision, and computational neuroscience."
-                ),
-            },
-            {
-                "name": "teo-hobbies",
-                "content": (
-                    "Outside of research, Teo Imoto-Tar makes music and likes capybaras."
-                ),
-            },
-            {
-                "name": "ene-creation",
-                "content": "Ene is an AI assistant created by Teo Imoto-Tar on January 14, 2026.",
-            },
-        ]
+        log.info(f"Loading episodes from {json_path}...")
+        episodes_raw = load_raw_json(json_path)
+        
+        log.info(f"Found {len(episodes_raw)} episodes. Starting ingestion...")
 
-        for i, ep in enumerate(episodes):
-            log.info(f"🧠 Adding episode: {ep['name']}")
-            await graphiti.add_episode(
-                name=ep["name"],
-                episode_body=ep["content"],
-                source=EpisodeType.text,
-                source_description="User-defined memory",
-                reference_time=datetime.now(timezone.utc),
-            )
+        added = 0
+        for idx, ep in enumerate(episodes_raw):
+            episode_id = ep.get("id", f"ep_{idx}")
+            body, ref_time = format_ene_episode(ep)
 
-        log.info("✅ Memory graph populated")
+            try:
+                await graphiti.add_episode(
+                    name=episode_id,
+                    episode_body=body,
+                    source=EpisodeType.text,
+                    source_description="Ene Interaction History",
+                    reference_time=ref_time,
+                )
+                added += 1
+                log.info(f"[{idx+1}/{len(episodes_raw)}] Ingested '{episode_id}'")
+                
+            except Exception as e:
+                log.exception(f"Failed to ingest episode {episode_id}: {e}")
 
+        log.info(f"Ingestion complete. {added}/{len(episodes_raw)} episodes added.")
+
+    except Exception as e:
+        log.critical(f"Critical error during execution: {e}")
     finally:
-        await graphiti.close()
-        log.info("🔒 Graphiti connection closed")
-
+        try:
+            await graphiti.close()
+            log.info("Connection closed.")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 
 ##### FILE: ./logger.py #####
 
@@ -2508,6 +2659,173 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+
+##### FILE: ./data/messages_preproc.py #####
+
+import json
+import re
+
+INPUT = "messages.json"
+OUTPUT = "my_messages_clean.json"
+
+REACTION_PATTERNS = [
+    r"^(liked|loved|emphasized|disliked|laughed at) an (image|photo|video|attachment)$",
+    r"^(liked|loved|emphasized|disliked|laughed at) a (message|photo|video)$",
+    r"^(liked|loved|emphasized|disliked|laughed at)\s+“.*”$",
+    r"^(liked|loved|emphasized|disliked|laughed at)\s+\".*\"$",
+]
+
+def is_reaction(text: str) -> bool:
+    t = text.strip().lower()
+    return any(re.match(p, t) for p in REACTION_PATTERNS)
+
+def is_good(text: str) -> bool:
+    t = text.strip()
+    return (
+        len(t) >= 5 and
+        not t.isdigit() and
+        not is_reaction(t)
+    )
+
+with open(INPUT) as f:
+    messages = json.load(f)
+
+clean = [
+    {
+        "timestamp": m["timestamp"],
+        "text": m["text"].strip()
+    }
+    for m in messages
+    if (
+        m.get("is_from_me") == 1 and
+        m.get("text") and
+        is_good(m["text"])
+    )
+]
+
+with open(OUTPUT, "w") as f:
+    json.dump(clean, f, indent=2, ensure_ascii=False)
+
+print(f"Saved {len(clean)} cleaned messages → {OUTPUT}")
+
+
+
+##### FILE: ./data/graph_preproc.py #####
+
+"""
+Preprocess cleaned iMessage data into Graphiti-ready memory episodes.
+
+Input:
+  - my_messages_clean.json
+
+Output:
+  - episode_candidates.json
+  - graphiti_ready.json
+
+Pipeline:
+  1. Window messages into chunks
+  2. Build episode candidates
+  3. Use raw text as summary (no LLM)
+  4. Prune low-confidence data (empty since no LLM)
+  5. Emit Graphiti-ready objects
+"""
+
+import os
+import json
+from typing import List, Dict
+
+# -----------------------
+# Configuration
+# -----------------------
+
+INPUT_FILE = "my_messages_clean.json"
+EPISODE_CANDIDATES_FILE = "episode_candidates.json"
+GRAPHITI_READY_FILE = "graphiti_ready.json"
+
+WINDOW_SIZE = 4
+
+# -----------------------
+# Step 1: Load messages
+# -----------------------
+
+with open(INPUT_FILE, "r") as f:
+    messages = json.load(f)
+
+assert messages, "No messages found"
+
+# -----------------------
+# Step 2: Window messages
+# -----------------------
+
+chunks = [messages[i:i + WINDOW_SIZE] for i in range(0, len(messages), WINDOW_SIZE)]
+
+# -----------------------
+# Step 3: Build episode candidates
+# -----------------------
+
+def make_episode_candidate(chunk: List[Dict], idx: int) -> Dict:
+    return {
+        "episode_id": f"imessage_{idx}",
+        "source": "imessage",
+        "episode_type": "persona_bootstrap",
+        "time_range": {
+            "start": chunk[0]["timestamp"],
+            "end": chunk[-1]["timestamp"],
+        },
+        "raw_text": "\n".join(m["text"] for m in chunk),
+    }
+
+episode_candidates = [make_episode_candidate(chunk, i) for i, chunk in enumerate(chunks)]
+
+with open(EPISODE_CANDIDATES_FILE, "w") as f:
+    json.dump(episode_candidates, f, indent=2, ensure_ascii=False)
+
+print(f"Wrote {len(episode_candidates)} episode candidates → {EPISODE_CANDIDATES_FILE}")
+
+# -----------------------
+# Step 4: Prune / normalize (no LLM, so just pass)
+# -----------------------
+
+def prune_extraction(extraction: Dict) -> Dict:
+    # no traits, preferences, facts yet
+    return {
+        "summary": extraction.get("summary", "").strip(),
+        "persona_traits": [],
+        "preferences": [],
+        "facts": [],
+    }
+
+# -----------------------
+# Step 5: Build Graphiti-ready objects
+# -----------------------
+
+graphiti_ready = []
+
+for ep in episode_candidates:
+    extraction = {
+        "summary": ep["raw_text"][:200]  # take first 200 chars as fallback
+    }
+    extraction = prune_extraction(extraction)
+
+    graphiti_ready.append({
+        "episode": {
+            "episode_type": "MEMORY",
+            "content": extraction["summary"],
+            "metadata": {
+                "source": ep["source"],
+                "time_range": f"{ep['time_range']['start']} → {ep['time_range']['end']}",
+            },
+        },
+        "persona_traits": extraction["persona_traits"],
+        "preferences": extraction["preferences"],
+        "facts": extraction["facts"],
+    })
+
+with open(GRAPHITI_READY_FILE, "w") as f:
+    json.dump(graphiti_ready, f, indent=2, ensure_ascii=False)
+
+print(f"Wrote {len(graphiti_ready)} Graphiti-ready episodes → {GRAPHITI_READY_FILE}")
 
 
 ##### FILE: ./kokoro/demo/app.py #####
